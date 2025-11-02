@@ -1,0 +1,36 @@
+@import './styles/theme.css';
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    background: var(--sl-background);
+    color: var(--sl-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Override React Flow default node styles */
+  .react-flow__node {
+    background: transparent !important;
+  }
+  
+  .react-flow__node-default {
+    background: transparent !important;
+  }
+  
+  /* Style all select dropdowns to use surface (blue) background */
+  select {
+    background-color: var(--sl-surface) !important;
+    color: var(--sl-text-primary) !important;
+  }
+  
+  select option {
+    background-color: var(--sl-surface) !important;
+    color: var(--sl-text-primary) !important;
+  }
+  
+}

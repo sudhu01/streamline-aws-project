@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  clerkUserId String   @unique
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workflows   Workflow[]
+  integrations Integration[]
+  apiKeys      ApiKey[]
+  @@index([clerkUserId])
+}
+
+model Workflow {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  isActive     Boolean  @default(false)
+  triggerType  String?
+  triggerConfig Json?
+  rfNodes      Json?    // React Flow nodes array
+  rfEdges      Json?    // React Flow edges array
+  lastRunAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  ownerId      String   @db.Uuid
+  owner        User     @relation(fields: [ownerId], references: [id])
+  nodes        Node[]
+  edges        Edge[]
+  executions   Execution[]
+  @@index([ownerId])
+  @@index([isActive])
+  @@index([updatedAt])
+}
+
+model Node {
+  id         String   @id @default(cuid())
+  type       String
+  data       Json
+  positionX  Float
+  positionY  Float
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+}
+
+model Edge {
+  id         String   @id @default(cuid())
+  source     String
+  target     String
+  label      String?
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+}
+
+model Integration {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id])
+  type        String
+  name        String
+  configEnc   String   // encrypted JSON
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  apiKeys     ApiKey[]
+  @@index([userId])
+  @@index([type])
+}
+
+model IntegrationType {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  displayName  String
+  description  String?
+  logoUrl      String?
+  authType     String
+  configSchema Json?
+  category     String?
+  createdAt    DateTime @default(now())
+}
+
+model ApiKey {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  user          User     @relation(fields: [userId], references: [id])
+  integrationId String?  @db.Uuid
+  integration   Integration? @relation(fields: [integrationId], references: [id])
+  name          String
+  keyEnc        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastUsedAt    DateTime?
+  @@index([userId])
+  @@index([integrationId])
+}
+
+model LogEntry {
+  id         String   @id @default(cuid())
+  level      String
+  message    String
+  meta       Json?
+  createdAt  DateTime @default(now())
+}
+
+model Execution {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id])
+  status      String   // Success | Failed | Running
+  triggerType String?
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  successRate Float?
+  input       Json?
+  output      Json?
+  error       Json?
+  steps       ExecutionStep[]
+  @@index([workflowId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model ExecutionStep {
+  id           String   @id @default(cuid())
+  executionId  String
+  execution    Execution @relation(fields: [executionId], references: [id])
+  stepNumber   Int
+  nodeId       String
+  nodeName     String
+  nodeType     String
+  status       String   // success | failed | skipped | running
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  durationMs   Int?
+  input        Json?
+  output       Json?
+  error        Json?
+  @@index([executionId])
+}
+
+

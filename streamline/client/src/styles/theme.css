@@ -1,0 +1,35 @@
+:root {
+  /* Dark theme as default */
+  --sl-primary: #8099f9;
+  --sl-primary-hover: #a4bbfc;
+  --sl-primary-active: #6576f3;
+  --sl-background: #0f172a;
+  --sl-surface: #1e293b;
+  --sl-surface-elevated: #334155;
+  --sl-text-primary: #f8fafc;
+  --sl-text-secondary: #cbd5e1;
+  --sl-border: #334155;
+  --sl-border-hover: #475569;
+  --sl-success: #22c55e;
+  --sl-error: #ef4444;
+  --sl-warning: #f59e0b;
+  --sl-shadow: rgba(0, 0, 0, 0.3);
+}
+
+.light {
+  --sl-primary: #6576f3;
+  --sl-primary-hover: #4f52e7;
+  --sl-primary-active: #4340cc;
+  --sl-background: #ffffff;
+  --sl-surface: #f8fafc;
+  --sl-surface-elevated: #ffffff;
+  --sl-text-primary: #0f172a;
+  --sl-text-secondary: #64748b;
+  --sl-border: #e2e8f0;
+  --sl-border-hover: #cbd5e1;
+  --sl-success: #22c55e;
+  --sl-error: #ef4444;
+  --sl-warning: #f59e0b;
+  --sl-shadow: rgba(0, 0, 0, 0.1);
+}
+
