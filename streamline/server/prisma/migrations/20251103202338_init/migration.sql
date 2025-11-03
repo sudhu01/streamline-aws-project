@@ -1,4 +1,4 @@
-﻿-- CreateTable
+-- CreateTable
 CREATE TABLE "User" (
     "id" UUID NOT NULL,
     "clerkUserId" TEXT NOT NULL,
