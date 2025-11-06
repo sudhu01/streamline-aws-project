@@ -7,6 +7,11 @@ import { BrowserRouter } from 'react-router-dom'
 
 const queryClient = new QueryClient()
 
+// Ensure dark mode class is applied to HTML element
+if (!document.documentElement.classList.contains('dark')) {
+  document.documentElement.classList.add('dark')
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

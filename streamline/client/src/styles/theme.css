@@ -1,35 +1,83 @@
-:root {
-  /* Dark theme as default */
-  --sl-primary: #8099f9;
-  --sl-primary-hover: #a4bbfc;
-  --sl-primary-active: #6576f3;
-  --sl-background: #0f172a;
-  --sl-surface: #1e293b;
-  --sl-surface-elevated: #334155;
-  --sl-text-primary: #f8fafc;
-  --sl-text-secondary: #cbd5e1;
-  --sl-border: #334155;
-  --sl-border-hover: #475569;
-  --sl-success: #22c55e;
-  --sl-error: #ef4444;
-  --sl-warning: #f59e0b;
-  --sl-shadow: rgba(0, 0, 0, 0.3);
+@layer base {
+  :root {
+    /* shadcn/ui CSS variables - HSL format (space-separated values) */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --radius: 0.5rem;
+    
+    /* Legacy custom theme variables - mapped to shadcn HSL values */
+    --sl-primary: hsl(217.2 91.2% 59.8%);
+    --sl-primary-hover: hsl(217.2 91.2% 65%);
+    --sl-primary-active: hsl(217.2 91.2% 55%);
+    --sl-background: hsl(222.2 84% 4.9%);
+    --sl-surface: hsl(217.2 32.6% 17.5%);
+    --sl-surface-elevated: hsl(217.2 32.6% 22%);
+    --sl-text-primary: hsl(210 40% 98%);
+    --sl-text-secondary: hsl(215 20.2% 65.1%);
+    --sl-border: hsl(217.2 32.6% 17.5%);
+    --sl-border-hover: hsl(217.2 32.6% 25%);
+    --sl-success: hsl(142.1 76.2% 36.3%);
+    --sl-error: hsl(0 62.8% 30.6%);
+    --sl-warning: hsl(32.1 94.6% 43.7%);
+    --sl-shadow: rgba(0, 0, 0, 0.3);
+  }
+
+  .light {
+    /* Light theme - shadcn/ui variables */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 224.3 76.3% 48%;
+    --radius: 0.5rem;
+    
+    /* Legacy custom theme variables - mapped to shadcn HSL values */
+    --sl-primary: hsl(217.2 91.2% 59.8%);
+    --sl-primary-hover: hsl(217.2 91.2% 55%);
+    --sl-primary-active: hsl(217.2 91.2% 50%);
+    --sl-background: hsl(0 0% 100%);
+    --sl-surface: hsl(210 40% 96.1%);
+    --sl-surface-elevated: hsl(0 0% 100%);
+    --sl-text-primary: hsl(222.2 84% 4.9%);
+    --sl-text-secondary: hsl(215.4 16.3% 46.9%);
+    --sl-border: hsl(214.3 31.8% 91.4%);
+    --sl-border-hover: hsl(215.4 16.3% 56.9%);
+    --sl-success: hsl(142.1 76.2% 36.3%);
+    --sl-error: hsl(0 84.2% 60.2%);
+    --sl-warning: hsl(32.1 94.6% 43.7%);
+    --sl-shadow: rgba(0, 0, 0, 0.1);
+  }
 }
 
-.light {
-  --sl-primary: #6576f3;
-  --sl-primary-hover: #4f52e7;
-  --sl-primary-active: #4340cc;
-  --sl-background: #ffffff;
-  --sl-surface: #f8fafc;
-  --sl-surface-elevated: #ffffff;
-  --sl-text-primary: #0f172a;
-  --sl-text-secondary: #64748b;
-  --sl-border: #e2e8f0;
-  --sl-border-hover: #cbd5e1;
-  --sl-success: #22c55e;
-  --sl-error: #ef4444;
-  --sl-warning: #f59e0b;
-  --sl-shadow: rgba(0, 0, 0, 0.1);
-}
 

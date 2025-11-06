@@ -4,6 +4,11 @@ import axios from 'axios'
 // Create a separate axios instance without auth interceptor for public endpoints
 const publicApi = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  responseType: 'json', // Explicitly set response type
 })
 
 // Cache for available integrations (they don't change often)
@@ -15,20 +20,77 @@ export function getAvailableIntegrations() {
   // Use cache to avoid hitting rate limits
   const now = Date.now()
   if (availableIntegrationsCache && (now - availableIntegrationsCache.timestamp) < CACHE_TTL) {
-    return Promise.resolve(availableIntegrationsCache.data)
+    // Verify cached data is an array before returning
+    if (Array.isArray(availableIntegrationsCache.data)) {
+      console.log('[IntegrationService] Returning cached integrations:', availableIntegrationsCache.data.length)
+      return Promise.resolve(availableIntegrationsCache.data)
+    } else {
+      // Cache has invalid data, clear it
+      console.warn('[IntegrationService] Cached data is not an array, clearing cache')
+      availableIntegrationsCache = null
+    }
   }
   
+  console.log('[IntegrationService] Fetching fresh integrations from API')
   return publicApi.get('/api/integrations/available')
     .then(r => {
-      availableIntegrationsCache = { data: r.data, timestamp: now }
-      return r.data
+      console.log('[IntegrationService] API response received:', {
+        status: r.status,
+        dataType: typeof r.data,
+        isArray: Array.isArray(r.data),
+        isString: typeof r.data === 'string',
+        length: Array.isArray(r.data) ? r.data.length : 'N/A',
+        rawData: r.data
+      })
+      
+      let data = r.data
+      
+      // If response is a string, try to parse it as JSON
+      if (typeof data === 'string') {
+        console.warn('[IntegrationService] Response is string, attempting to parse as JSON')
+        try {
+          data = JSON.parse(data)
+          console.log('[IntegrationService] Successfully parsed string response:', {
+            dataType: typeof data,
+            isArray: Array.isArray(data),
+            length: Array.isArray(data) ? data.length : 'N/A'
+          })
+        } catch (parseError) {
+          console.error('[IntegrationService] Failed to parse string response as JSON:', parseError)
+          console.error('[IntegrationService] String content:', data.substring(0, 200))
+          availableIntegrationsCache = null
+          throw new Error('API returned string that could not be parsed as JSON')
+        }
+      }
+      
+      // Verify response is an array before caching
+      if (!Array.isArray(data)) {
+        console.error('[IntegrationService] ERROR: API returned non-array data:', typeof data, data)
+        // Clear cache if it exists
+        availableIntegrationsCache = null
+        throw new Error('API returned invalid data format. Expected array, got ' + typeof data)
+      }
+      
+      availableIntegrationsCache = { data: data, timestamp: now }
+      console.log('[IntegrationService] Cached', data.length, 'integrations')
+      return data
     })
     .catch(error => {
-      // If cache exists and request fails, return cache
-      if (availableIntegrationsCache) {
-        console.warn('Failed to fetch fresh integrations, using cache:', error)
+      console.error('[IntegrationService] Error fetching integrations:', error)
+      console.error('[IntegrationService] Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      })
+      
+      // If cache exists and has valid array data, return cache
+      if (availableIntegrationsCache && Array.isArray(availableIntegrationsCache.data)) {
+        console.warn('[IntegrationService] Using cached data due to error')
         return availableIntegrationsCache.data
       }
+      
+      // Clear invalid cache
+      availableIntegrationsCache = null
       throw error
     })
 }

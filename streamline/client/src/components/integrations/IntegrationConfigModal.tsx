@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import Button from '@/components/shared/Button'
+import Input from '@/components/shared/Input'
+import { Label } from '@/components/ui/label'
 
 interface ApiKeyPair {
   name: string
@@ -23,6 +27,11 @@ export default function IntegrationConfigModal({
   const [pollingEnabled, setPollingEnabled] = useState(false)
   const [botToken, setBotToken] = useState('')
   const [connectionMode, setConnectionMode] = useState<'webhook' | 'polling'>('webhook')
+  const [smtpHost, setSmtpHost] = useState('')
+  const [smtpPort, setSmtpPort] = useState('587')
+  const [smtpUser, setSmtpUser] = useState('')
+  const [smtpPassword, setSmtpPassword] = useState('')
+  const [smtpTls, setSmtpTls] = useState(true)
   const [testing, setTesting] = useState(false)
   const [result, setResult] = useState<any>(null)
   
@@ -37,11 +46,16 @@ export default function IntegrationConfigModal({
       setPollingEnabled(false)
       setBotToken('')
       setConnectionMode('webhook')
+      setSmtpHost('')
+      setSmtpPort('587')
+      setSmtpUser('')
+      setSmtpPassword('')
+      setSmtpTls(true)
       setResult(null)
     }
   }, [open])
   
-  if (!open || !integration) return null
+  if (!integration) return null
 
   const addApiKeyField = () => {
     setApiKeys([...apiKeys, { name: '', value: '' }])
@@ -97,6 +111,20 @@ export default function IntegrationConfigModal({
         return
       }
       config.apiKeys = apiKeyConfig
+    } else if (authType === 'smtp') {
+      if (!smtpHost.trim() || !smtpUser.trim() || !smtpPassword.trim()) {
+        setResult({ ok: false, error: 'SMTP host, username, and password are required' })
+        return
+      }
+      config.smtpHost = smtpHost.trim()
+      config.smtpPort = parseInt(smtpPort) || 587
+      config.smtpUser = smtpUser.trim()
+      config.smtpPassword = smtpPassword.trim()
+      config.smtpTls = smtpTls
+    } else if (authType === 'oauth') {
+      // OAuth will initiate flow - for now, just store basic config
+      // In production, this would trigger OAuth flow
+      config.oauthEnabled = true
     }
     
     await onSave(config)
@@ -116,17 +144,14 @@ export default function IntegrationConfigModal({
     if (authType === 'webhook') {
       return (
         <div>
-          <label className="block text-sm font-medium mb-2">Webhook URL</label>
-          <input
-            type="url"
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-            placeholder="https://discord.com/api/webhooks/..."
-            className="w-full border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
-          />
-          <p className="text-xs text-text-secondary mt-1">
-            Enter the webhook URL from your Discord server settings
-          </p>
+            <Input
+              label="Webhook URL"
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://discord.com/api/webhooks/..."
+              helperText="Enter the webhook URL from your Discord server settings"
+            />
         </div>
       )
     }
@@ -164,31 +189,25 @@ export default function IntegrationConfigModal({
 
           {connectionMode === 'webhook' ? (
             <div>
-              <label className="block text-sm font-medium mb-2">Webhook URL</label>
-              <input
-                type="url"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://api.telegram.org/bot..."
-                className="w-full border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
-              />
-              <p className="text-xs text-text-secondary mt-1">
-                Enter the Telegram webhook URL
-              </p>
+              <Input
+              label="Webhook URL"
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://api.telegram.org/bot..."
+              helperText="Enter the Telegram webhook URL"
+            />
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium mb-2">Bot Token</label>
-              <input
+              <Input
+                label="Bot Token"
                 type="password"
                 value={botToken}
                 onChange={(e) => setBotToken(e.target.value)}
                 placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
-                className="w-full border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
+                helperText="Get your bot token from @BotFather on Telegram"
               />
-              <p className="text-xs text-text-secondary mt-1">
-                Get your bot token from @BotFather on Telegram
-              </p>
               <label className="flex items-center gap-2 mt-3">
                 <input
                   type="checkbox"
@@ -200,6 +219,63 @@ export default function IntegrationConfigModal({
               </label>
             </div>
           )}
+        </div>
+      )
+    }
+
+    if (authType === 'smtp') {
+      return (
+        <div className="space-y-4">
+          <Input
+            label="SMTP Host"
+            type="text"
+            value={smtpHost}
+            onChange={(e) => setSmtpHost(e.target.value)}
+            placeholder="smtp.gmail.com"
+          />
+          <Input
+            label="SMTP Port"
+            type="number"
+            value={smtpPort}
+            onChange={(e) => setSmtpPort(e.target.value)}
+            placeholder="587"
+          />
+          <Input
+            label="Username"
+            type="text"
+            value={smtpUser}
+            onChange={(e) => setSmtpUser(e.target.value)}
+            placeholder="your-email@example.com"
+          />
+          <Input
+            label="Password"
+            type="password"
+            value={smtpPassword}
+            onChange={(e) => setSmtpPassword(e.target.value)}
+            placeholder="Your email password or app password"
+          />
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={smtpTls}
+              onChange={(e) => setSmtpTls(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm">Enable TLS/SSL</span>
+          </label>
+        </div>
+      )
+    }
+
+    if (authType === 'oauth') {
+      return (
+        <div className="p-4 rounded border border-border bg-surface/50">
+          <p className="text-sm text-text-secondary mb-3">
+            OAuth authentication will be initiated when you save this integration. You'll be redirected to authorize access.
+          </p>
+          <p className="text-xs text-text-secondary">
+            Click "Save & Connect" to begin the OAuth authorization flow.
+          </p>
         </div>
       )
     }
@@ -222,18 +298,18 @@ export default function IntegrationConfigModal({
         <div className="space-y-2">
           {apiKeys.map((keyPair, index) => (
             <div key={index} className="flex gap-2 items-center">
-              <input
+              <Input
                 value={keyPair.name}
                 onChange={(e) => updateApiKey(index, 'name', e.target.value)}
                 placeholder="Key name (e.g., API_KEY, SECRET_KEY)"
-                className="flex-1 border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
+                className="flex-1"
               />
-              <input
+              <Input
                 type="password"
                 value={keyPair.value}
                 onChange={(e) => updateApiKey(index, 'value', e.target.value)}
                 placeholder="Key value"
-                className="flex-1 border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
+                className="flex-1"
               />
               {apiKeys.length > 1 && (
                 <button
@@ -252,43 +328,36 @@ export default function IntegrationConfigModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="border border-border rounded-lg w-full max-w-2xl p-6 shadow-theme-lg max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#0f172a', opacity: 1 }} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="font-semibold text-lg">Configure: {integration.name}</div>
-            <div className="text-sm text-text-secondary mt-1">{integration.description}</div>
-          </div>
-          <button 
-            onClick={onClose} 
-            className="px-3 py-1.5 rounded border border-border hover:border-primary transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Configure: {integration.name}</DialogTitle>
+          <DialogDescription>{integration.description}</DialogDescription>
+        </DialogHeader>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Integration Name</label>
-            <input 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={integration.name}
-              className="w-full border border-border rounded px-3 py-2 bg-background text-text-primary focus:outline-none focus:border-primary"
-            />
-          </div>
+          <Input
+            label="Integration Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={integration.name}
+          />
 
           {renderAuthForm()}
         </div>
 
-        <div className="mt-6 flex gap-3 justify-end">
-          <button 
-            onClick={onClose} 
-            className="px-4 py-2 rounded border border-border hover:border-primary transition-colors"
-          >
+        {result && (
+          <div className={`mt-4 p-3 rounded text-sm ${result.ok ? 'bg-green-500/20 text-green-400' : 'bg-destructive/20 text-destructive'}`}>
+            {result.ok ? '✓ Connection successful!' : `✗ Connection failed: ${result.error || 'Unknown error'}`}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="primary"
             disabled={testing}
             onClick={async () => {
               setTesting(true)
@@ -302,18 +371,12 @@ export default function IntegrationConfigModal({
                 setTesting(false)
               }
             }}
-            className="px-4 py-2 rounded bg-primary text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {testing ? 'Testing...' : 'Save & Connect'}
-          </button>
-        </div>
-
-        {result && (
-          <div className={`mt-4 p-3 rounded text-sm ${result.ok ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
-            {result.ok ? '✓ Connection successful!' : `✗ Connection failed: ${result.error || 'Unknown error'}`}
-          </div>
-        )}
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
+

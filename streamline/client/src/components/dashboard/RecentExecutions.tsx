@@ -36,7 +36,7 @@ export default function RecentExecutions() {
       )}
       {!isLoading && !error && (
         <div className="max-h-80 overflow-auto divide-y">
-          {data && data.length > 0 ? (
+          {Array.isArray(data) && data.length > 0 ? (
             data.map((ex) => (
               <div key={ex.id} className="py-2 flex items-center justify-between">
                 <div>

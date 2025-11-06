@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { prisma } from '../utils/prisma'
 import { requireAuth } from '../middleware/auth'
+import { executeWorkflow } from '../services/workflowExecutor'
 
 export const logsRouter = Router()
 
@@ -107,7 +108,6 @@ logsRouter.get('/:id', requireAuth, async (req, res) => {
 })
 
 // Retry execution: simply trigger workflow again using same input
-import { executeWorkflow } from '../services/workflowExecutor'
 logsRouter.post('/:id/retry', requireAuth, async (req, res) => {
   try {
     const ex = await prisma.execution.findUnique({ where: { id: req.params.id } })

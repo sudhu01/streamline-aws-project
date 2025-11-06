@@ -2,7 +2,7 @@ import { prisma } from '../utils/prisma'
 import { encryptApiKey, decryptApiKey } from './encryptionService'
 
 export function getAvailableIntegrations() {
-  return [
+  const integrations = [
     { 
       key: 'discord', 
       name: 'Discord', 
@@ -51,7 +51,50 @@ export function getAvailableIntegrations() {
       authType: 'api',
       logoUrl: '' 
     },
+    { 
+      key: 'rest_api', 
+      name: 'HTTP/REST API', 
+      category: 'Custom', 
+      description: 'Make custom HTTP requests to any API endpoint', 
+      authType: 'api',
+      logoUrl: '' 
+    },
+    { 
+      key: 'webhook', 
+      name: 'Webhook', 
+      category: 'Custom', 
+      description: 'Receive webhooks from external services', 
+      authType: 'webhook',
+      logoUrl: '' 
+    },
+    { 
+      key: 'email', 
+      name: 'Email (SMTP)', 
+      category: 'Communication', 
+      description: 'Send emails via SMTP servers', 
+      authType: 'smtp',
+      logoUrl: '' 
+    },
   ]
+  
+  // Validate all integrations have required fields
+  const requiredFields = ['key', 'name', 'category', 'description', 'authType']
+  const invalidIntegrations = integrations.filter((integration, index) => {
+    const missingFields = requiredFields.filter(field => !integration[field as keyof typeof integration])
+    if (missingFields.length > 0) {
+      console.error(`[IntegrationService] Integration at index ${index} missing fields:`, missingFields, integration)
+      return true
+    }
+    return false
+  })
+  
+  if (invalidIntegrations.length > 0) {
+    console.error(`[IntegrationService] ERROR: ${invalidIntegrations.length} integration(s) missing required fields`)
+  } else {
+    console.log(`[IntegrationService] All ${integrations.length} integrations have required fields`)
+  }
+  
+  return integrations
 }
 
 export async function getConnectedIntegrations(clerkUserId: string) {

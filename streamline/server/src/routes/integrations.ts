@@ -5,12 +5,35 @@ import { initiateOAuthFlow, handleOAuthCallback } from '../services/oauthService
 
 export const integrationsRouter = Router()
 
+// Log route registration
+console.log('[Integrations] Router initialized, registering routes...')
+
 // Available integrations endpoint - public, no auth required (just listing available integrations)
 integrationsRouter.get('/available', (_req, res) => {
+  console.log('[Integrations] ===== GET /api/integrations/available handler called =====')
+  console.log('[Integrations] Request received:', {
+    method: _req.method,
+    path: _req.path,
+    url: _req.url,
+    originalUrl: _req.originalUrl
+  })
   try {
     const integrations = getAvailableIntegrations()
+    console.log('[Integrations] Available integrations count:', integrations?.length || 0)
+    console.log('[Integrations] Available integrations:', JSON.stringify(integrations, null, 2))
+    
+    // Ensure we always return an array
+    if (!Array.isArray(integrations)) {
+      console.error('[Integrations] ERROR: getAvailableIntegrations() did not return an array:', typeof integrations)
+      return res.status(500).json({ error: 'Invalid response format from integrations service' })
+    }
+    
+    // Explicitly set Content-Type header and send JSON
+    res.setHeader('Content-Type', 'application/json')
     res.json(integrations)
   } catch (error: any) {
+    console.error('[Integrations] Error in /available endpoint:', error)
+    console.error('[Integrations] Error stack:', error?.stack)
     res.status(500).json({ error: error?.message || 'Failed to load available integrations' })
   }
 })

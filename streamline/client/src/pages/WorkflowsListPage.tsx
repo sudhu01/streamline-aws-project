@@ -11,6 +11,7 @@ export default function WorkflowsListPage() {
   const [status, setStatus] = useState<'All'|'Active'|'Inactive'>('All')
   const [sort, setSort] = useState('updatedAt')
   const [view, setView] = useState<'grid'|'list'>('grid')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const search = useDebounce(q, 300)
 
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['workflows', { q: search, status, sort }], queryFn: () => getWorkflows({ q: search, status: status === 'All' ? undefined : status, sort }) })
@@ -29,6 +30,71 @@ export default function WorkflowsListPage() {
   })
 
   const items = data || []
+  const allSelected = items.length > 0 && selectedIds.size === items.length
+  const someSelected = selectedIds.size > 0 && selectedIds.size < items.length
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(items.map((it: any) => it.id)))
+    }
+  }
+
+  const handleSelectItem = (id: string) => {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const bulkActivateMut = useMutation({
+    mutationFn: async () => {
+      await Promise.all(Array.from(selectedIds).map(id => toggleWorkflowStatus(id, true)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      setSelectedIds(new Set())
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.error || 'Failed to activate workflows')
+    }
+  })
+
+  const bulkDeactivateMut = useMutation({
+    mutationFn: async () => {
+      await Promise.all(Array.from(selectedIds).map(id => toggleWorkflowStatus(id, false)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      setSelectedIds(new Set())
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.error || 'Failed to deactivate workflows')
+    }
+  })
+
+  const bulkDeleteMut = useMutation({
+    mutationFn: async () => {
+      await Promise.all(Array.from(selectedIds).map(id => deleteWorkflow(id)))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      setSelectedIds(new Set())
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.error || 'Failed to delete workflows')
+    }
+  })
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedIds.size} workflow(s)? This action cannot be undone.`)) {
+      bulkDeleteMut.mutate()
+    }
+  }
 
   return (
     <div className="px-4 py-6 max-w-6xl mx-auto pt-24">
@@ -38,6 +104,42 @@ export default function WorkflowsListPage() {
           <Plus size={16} /> Create Workflow
         </button>
       </div>
+      {selectedIds.size > 0 && (
+        <div className="mb-4 p-3 rounded border bg-surface flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{selectedIds.size} workflow(s) selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => bulkActivateMut.mutate()}
+              disabled={bulkActivateMut.isPending}
+              className="px-3 py-1 rounded border hover:border-[color:var(--sl-primary)] disabled:opacity-50"
+            >
+              Activate
+            </button>
+            <button 
+              onClick={() => bulkDeactivateMut.mutate()}
+              disabled={bulkDeactivateMut.isPending}
+              className="px-3 py-1 rounded border hover:border-[color:var(--sl-primary)] disabled:opacity-50"
+            >
+              Deactivate
+            </button>
+            <button 
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMut.isPending}
+              className="px-3 py-1 rounded bg-transparent border border-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+            >
+              Delete
+            </button>
+            <button 
+              onClick={() => setSelectedIds(new Set())}
+              className="px-3 py-1 rounded border hover:border-[color:var(--sl-primary)]"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap gap-3 items-center mb-4">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="border rounded px-3 py-2 bg-background" />
         <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="border rounded px-2 py-2 bg-surface text-text-primary">
@@ -68,25 +170,49 @@ export default function WorkflowsListPage() {
       )}
 
       {!isLoading && !error && items.length > 0 && (
-        view === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((it: any) => (
-              <WorkflowCard key={it.id} item={it} />
-            ))}
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(input) => {
+                if (input) input.indeterminate = someSelected
+              }}
+              onChange={handleSelectAll}
+              className="cursor-pointer"
+            />
+            <span className="text-sm text-text-secondary">Select All</span>
           </div>
-        ) : (
-          <div className="divide-y rounded border bg-surface">
-            {items.map((it: any) => (
-              <WorkflowRow key={it.id} item={it} />
-            ))}
-          </div>
-        )
+          {view === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {items.map((it: any) => (
+                <WorkflowCard 
+                  key={it.id} 
+                  item={it} 
+                  selected={selectedIds.has(it.id)}
+                  onSelect={() => handleSelectItem(it.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="divide-y rounded border bg-surface">
+              {items.map((it: any) => (
+                <WorkflowRow 
+                  key={it.id} 
+                  item={it} 
+                  selected={selectedIds.has(it.id)}
+                  onSelect={() => handleSelectItem(it.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
 }
 
-function WorkflowCard({ item }: any) {
+function WorkflowCard({ item, selected = false, onSelect }: any) {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [name, setName] = useState(item.name)
@@ -117,6 +243,16 @@ function WorkflowCard({ item }: any) {
   })
   
   const toggleMut = useMutation({ mutationFn: () => toggleWorkflowStatus(item.id, !item.isActive), onSuccess: () => qc.invalidateQueries({ queryKey: ['workflows'] }) })
+  const duplicateMut = useMutation({ 
+    mutationFn: () => duplicateWorkflow(item.id), 
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      navigate(`/workflows/${data.id}`)
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.error || 'Failed to duplicate workflow')
+    }
+  })
   const deleteMut = useMutation({ 
     mutationFn: () => deleteWorkflow(item.id), 
     onSuccess: () => {
@@ -153,8 +289,17 @@ function WorkflowCard({ item }: any) {
   }
 
   return (
-    <div className="rounded-lg border bg-surface p-4 hover:shadow transition-shadow">
-      {editingName ? (
+    <div className={`rounded-lg border bg-surface p-4 hover:shadow transition-shadow ${selected ? 'border-[color:var(--sl-primary)]' : ''}`}>
+      <div className="flex items-start gap-2 mb-2">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-pointer mt-1"
+        />
+        <div className="flex-1">
+          {editingName ? (
         <input 
           value={name} 
           onChange={(e)=>setName(e.target.value)} 
@@ -201,11 +346,21 @@ function WorkflowCard({ item }: any) {
         >
           {item.description || 'No description'}
         </div>
-      )}
+        )}
+        </div>
+      </div>
       <div className="mt-3 flex items-center justify-between">
         <span className={`px-2 py-0.5 rounded-full border text-xs ${item.isActive?'border-green-500 text-green-700':'border-slate-400'}`}>{item.isActive ? 'Active' : 'Inactive'}</span>
         <div className="flex items-center gap-2">
           <Link to={`/workflows/${item.id}`} className="px-2 py-1 rounded border hover:border-[color:var(--sl-primary)]">Edit</Link>
+          <button 
+            onClick={() => duplicateMut.mutate()} 
+            disabled={duplicateMut.isPending}
+            className="px-2 py-1 rounded border hover:border-[color:var(--sl-primary)] disabled:opacity-50"
+            title="Duplicate workflow"
+          >
+            {duplicateMut.isPending ? '...' : 'Duplicate'}
+          </button>
           <button onClick={()=>toggleMut.mutate()} className="px-2 py-1 rounded border hover:border-[color:var(--sl-primary)]">Toggle</button>
           <button 
             onClick={handleDelete} 
@@ -221,8 +376,9 @@ function WorkflowCard({ item }: any) {
   )
 }
 
-function WorkflowRow({ item }: any) {
+function WorkflowRow({ item, selected = false, onSelect }: any) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [name, setName] = useState(item.name)
   const [description, setDescription] = useState(item.description || '')
   const [editingName, setEditingName] = useState(false)
@@ -247,6 +403,17 @@ function WorkflowRow({ item }: any) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workflows'] })
       setEditingDescription(false)
+    }
+  })
+  
+  const duplicateMut = useMutation({ 
+    mutationFn: () => duplicateWorkflow(item.id), 
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['workflows'] })
+      navigate(`/workflows/${data.id}`)
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.error || 'Failed to duplicate workflow')
     }
   })
   
@@ -286,7 +453,14 @@ function WorkflowRow({ item }: any) {
   }
 
   return (
-    <div className="p-3 flex items-center gap-3">
+    <div className={`p-3 flex items-center gap-3 ${selected ? 'bg-surface-elevated' : ''}`}>
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={onSelect}
+        onClick={(e) => e.stopPropagation()}
+        className="cursor-pointer"
+      />
       <div className="flex-1">
         {editingName ? (
           <input 
@@ -340,6 +514,14 @@ function WorkflowRow({ item }: any) {
       <span className={`px-2 py-0.5 rounded-full border text-xs ${item.isActive?'border-green-500 text-green-700':'border-slate-400'}`}>{item.isActive ? 'Active' : 'Inactive'}</span>
       <div className="flex items-center gap-2">
         <Link to={`/workflows/${item.id}`} className="px-2 py-1 rounded border hover:border-[color:var(--sl-primary)]">Edit</Link>
+        <button 
+          onClick={() => duplicateMut.mutate()} 
+          disabled={duplicateMut.isPending}
+          className="px-2 py-1 rounded border hover:border-[color:var(--sl-primary)] disabled:opacity-50"
+          title="Duplicate workflow"
+        >
+          {duplicateMut.isPending ? '...' : 'Duplicate'}
+        </button>
         <button 
           onClick={handleDelete} 
           disabled={deleteMut.isPending}

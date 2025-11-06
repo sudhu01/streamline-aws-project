@@ -11,8 +11,8 @@ export function useDashboard() {
 
   return {
     stats: stats.data,
-    recentWorkflows: recentWorkflows.data,
-    recentLogs: recentLogs.data,
+    recentWorkflows: Array.isArray(recentWorkflows.data) ? recentWorkflows.data : [],
+    recentLogs: Array.isArray(recentLogs.data) ? recentLogs.data : [],
     isLoading,
     error,
   }

@@ -20,7 +20,7 @@ export default function RecentWorkflows() {
       {error && <div className="text-sm text-red-600">Failed to load workflows.</div>}
       {!isLoading && !error && (
         <div className="divide-y">
-          {recentWorkflows && recentWorkflows.length > 0 ? (
+          {Array.isArray(recentWorkflows) && recentWorkflows.length > 0 ? (
             recentWorkflows.map(w => (
               <div key={w.id} className="py-2 flex items-center justify-between">
                 <Link to={`/workflows/${w.id}`} className="hover:underline">{w.name}</Link>

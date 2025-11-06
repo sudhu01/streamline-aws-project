@@ -1,4 +1,6 @@
+import { Card as ShadcnCard, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import type { HTMLAttributes, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -13,17 +15,19 @@ export default function Card({
   hover = false,
   ...props 
 }: CardProps) {
-  const baseStyles = 'rounded-xl border bg-surface p-6 transition-all duration-200'
-  const elevatedStyles = elevated ? 'bg-surface-elevated shadow-theme-lg' : 'shadow-theme'
-  const hoverStyles = hover ? 'hover:shadow-theme-lg hover:border-[color:var(--sl-primary)] cursor-pointer' : ''
-  
   return (
-    <div 
-      className={`${baseStyles} ${elevatedStyles} ${hoverStyles} ${className}`}
+    <ShadcnCard 
+      className={cn(
+        elevated && 'shadow-lg',
+        hover && 'hover:shadow-lg transition-shadow cursor-pointer',
+        className
+      )}
       {...props}
     >
       {children}
-    </div>
+    </ShadcnCard>
   )
 }
 
+// Export shadcn card sub-components for convenience
+export { CardHeader, CardTitle, CardDescription, CardContent, CardFooter }

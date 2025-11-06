@@ -66,13 +66,44 @@ app.use('/api/logs', logsRouter);
 app.use('/api/triggers', triggersRouter);
 app.use('/api/actions', actionsRouter);
 app.use('/api/integrations', integrationsRouter);
+console.log('[Server] Registered /api/integrations router');
 app.use('/api/api-keys', apiKeysRouter);
+
+// Add 404 handler AFTER all routes (this must be last)
+app.use((req, res) => {
+  console.error('[Server] 404 - Route not found:', req.method, req.originalUrl);
+  console.error('[Server] Request details:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    originalUrl: req.originalUrl,
+    baseUrl: req.baseUrl
+  });
+  console.error('[Server] Available route prefixes:');
+  console.error('[Server]   - /api/health');
+  console.error('[Server]   - /api/auth');
+  console.error('[Server]   - /api/dashboard');
+  console.error('[Server]   - /api/workflows');
+  console.error('[Server]   - /api/logs');
+  console.error('[Server]   - /api/triggers');
+  console.error('[Server]   - /api/actions');
+  console.error('[Server]   - /api/integrations (should have /available, /connected, /:id, etc.)');
+  console.error('[Server]   - /api/api-keys');
+  res.status(404).json({ 
+    error: 'Route not found',
+    method: req.method,
+    path: req.path,
+    originalUrl: req.originalUrl,
+    message: `No route found for ${req.method} ${req.originalUrl}`
+  });
+});
 
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 app.listen(port, () => {
   logger.info(`Streamline server listening on port ${port}`);
   logger.info(`CORS enabled for: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+  console.log('[Server] All routes registered successfully');
 }).on('error', (err: any) => {
   logger.error(`Server error: ${err.message}`);
   if (err.code === 'EADDRINUSE') {

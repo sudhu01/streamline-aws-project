@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getAvailableIntegrations } from '../../services/integrationService'
 import IntegrationIconCard from './IntegrationIconCard'
 import IntegrationConfigModal from './IntegrationConfigModal'
-import { IconBrandSlack, IconBrandTwilio, IconLink, IconMail, IconBrandDiscord, IconBrandTelegram, IconTable, IconNews } from '@tabler/icons-react'
+import { IconBrandSlack, IconBrandTwilio, IconLink, IconBrandDiscord, IconBrandTelegram, IconTable, IconNews } from '@tabler/icons-react'
 
 export default function AvailableIntegrations({ category = 'All', search = '' }: { category?: string; search?: string }) {
   const [items, setItems] = useState<any[]>([])
@@ -17,25 +17,51 @@ export default function AvailableIntegrations({ category = 'All', search = '' }:
       try {
         setLoading(true)
         setError(null)
+        console.log('[AvailableIntegrations] Starting to load integrations...')
         const data = await getAvailableIntegrations()
         if (isMounted) {
-          console.log('Loaded integrations:', data)
-          setItems(data || [])
+          console.log('[AvailableIntegrations] Loaded integrations:', {
+            dataType: typeof data,
+            isArray: Array.isArray(data),
+            length: Array.isArray(data) ? data.length : 'N/A',
+            data: data
+          })
+          
+          if (!Array.isArray(data)) {
+            console.error('[AvailableIntegrations] ERROR: Received non-array data:', typeof data, data)
+            setError(`Invalid data format received. Expected array, got ${typeof data}. Check console for details.`)
+            setItems([])
+          } else {
+            console.log('[AvailableIntegrations] Setting', data.length, 'integrations')
+            setItems(data)
+          }
         }
       } catch (e: any) {
         if (!isMounted) return
-        console.error('Failed to load integrations:', e)
+        console.error('[AvailableIntegrations] Failed to load integrations:', e)
+        console.error('[AvailableIntegrations] Error details:', {
+          message: e?.message,
+          code: e?.code,
+          response: e?.response?.data,
+          status: e?.response?.status,
+          stack: e?.stack
+        })
+        
         const errorMessage = e?.response?.data?.error || e?.message || e?.code || 'Failed to load integrations'
+        
         // Provide more helpful error messages
-        if (e?.code === 'ERR_NETWORK' || e?.message?.includes('Network Error')) {
+        if (e?.code === 'ERR_NETWORK' || e?.message?.includes('Network Error') || e?.message?.includes('ECONNREFUSED')) {
           setError('Cannot connect to server. Please ensure the server is running on port 4000.')
         } else if (e?.response?.status === 401) {
           setError('Authentication required. Please sign in again.')
         } else if (e?.response?.status === 429) {
           setError('Too many requests. Please wait a moment and refresh the page.')
+        } else if (e?.response?.status === 500) {
+          setError(`Server error: ${errorMessage}. Check server logs for details.`)
         } else {
-          setError(errorMessage)
+          setError(`${errorMessage}. Check browser console for more details.`)
         }
+        setItems([])
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -46,12 +72,17 @@ export default function AvailableIntegrations({ category = 'All', search = '' }:
     return () => { isMounted = false }
   }, [])
   
-  // Filter items by category and search
-  const filteredItems = items.filter(item => {
+  // Hidden integrations - should not be displayed in the frontend
+  const hiddenIntegrations = ['rest_api', 'webhook', 'email', 'google_sheets', 'github', 'stripe', 'sendgrid']
+  
+  // Filter items by hidden list, category and search
+  const filteredItems = Array.isArray(items) ? items.filter(item => {
+    // Exclude hidden integrations
+    if (hiddenIntegrations.includes(item.key)) return false
     const matchesCategory = category === 'All' || item.category === category
     const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.description?.toLowerCase().includes(search.toLowerCase())
     return matchesCategory && matchesSearch
-  })
+  }) : []
   
   const handleIconClick = (integration: any) => {
     setSelectedIntegration(integration)
@@ -94,7 +125,13 @@ export default function AvailableIntegrations({ category = 'All', search = '' }:
     return (
       <div className="text-center py-12">
         <div className="text-error mb-2">Error loading integrations</div>
-        <div className="text-sm text-text-secondary">{error}</div>
+        <div className="text-sm text-text-secondary mb-4">{error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 rounded border hover:border-[color:var(--sl-primary)]"
+        >
+          Retry
+        </button>
       </div>
     )
   }
