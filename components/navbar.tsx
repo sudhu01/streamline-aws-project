@@ -56,7 +56,7 @@ export const Navbar: React.FC = () => {
               
               
               <Link 
-                href="https://github.com/sudhu01/streamline" 
+                href="https://github.com/sudhu01/streamline-aws-project" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center hover:text-cyan-400 transition-colors"
